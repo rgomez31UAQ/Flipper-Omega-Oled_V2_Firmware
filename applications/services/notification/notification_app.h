@@ -52,6 +52,8 @@ typedef struct {
     int8_t contrast;
     bool vibro_on;
     bool display_inverted;
+    bool led_common_anode;
+    uint8_t led_color_preset;
 } NotificationSettings;
 
 struct NotificationApp {

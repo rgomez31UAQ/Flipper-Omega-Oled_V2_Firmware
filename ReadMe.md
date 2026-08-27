@@ -31,6 +31,7 @@ Here is the physical DIY board in action:
 - [System Architecture](#system-architecture)
 - [What Works and Limitations](#what-works-and-limitations)
 - [Key Pins and Wiring](#key-pins-and-wiring)
+- [External GPIO Header Pinout](#external-gpio-header-pinout)
 - [MCP23017 Wiring Guide](#mcp23017-wiring-guide)
 - [How to Build and Flash](#how-to-build-and-flash)
 - [Schematic](#schematic)
@@ -115,6 +116,37 @@ graph TD
 | **LF-RFID (125 kHz)** | PWM / Timer | TX Carrier: PA5 (TIM2_CH1), RX Data: PA1 | 125 kHz coil driver transistor + envelope demodulator |
 | **Speaker** | PWM | PB8 (TIM16) | Sound buzzer |
 | **iButton** | 1-Wire | PA3 | Dallas 1-Wire keys |
+
+---
+
+## <a id="external-gpio-header-pinout"></a>🔌 External GPIO Header Pinout (18-Pin)
+
+The DIY Flipper Zero features a standard 18-pin expansion header fully compatible with Flipper Zero accessories. Below is the exact hardware routing and peripheral mapping:
+
+| Header Pin | Flipper OS Name | Physical MCU Pin | Available Hardware Functions | Notes & Usage |
+|:---:|:---:|:---:|:---|:---|
+| **1** | **5V** | — | +5V Power Output (from USB VBUS) | Power external modules |
+| **2** | **A7 (PA7)** | **PB5** | GPIO, PWM (TIM1), SPI1 MOSI | Shared with on-board SPI1 MOSI bus (SD / CC1101) |
+| **3** | **A6 (PA6)** | **PA6** | GPIO, ADC (CH11), SPI1 MISO | Shared with on-board SPI1 MISO bus (SD / CC1101) |
+| **4** | **A4 (PA4)** | **PA4** | GPIO, ADC (CH9), PWM (LPTIM2) | **Dedicated free GPIO / ADC / PWM** |
+| **5** | **B3 (PB3)** | **PB3** | GPIO, SPI1 SCK | Shared with on-board SPI1 SCK clock line |
+| **6** | **B2 (PB2)** | **PB2** | GPIO | **Dedicated free GPIO** |
+| **7** | **C3 (PC3)** | **PA5** | GPIO, ADC (CH4), TIM2_CH1 | Routed to PA5 (used internally for LF-RFID 125 kHz TX carrier) |
+| **8** | **GND** | — | Ground (GND) | Common ground |
+| **9** | **3V3** | — | +3.3V Power Output | Main regulated 3.3V power rail |
+| **10** | **SWCLK** | **PA14** | SWD Clock, Debug GPIO | Hardware debug / ST-Link SWD clock |
+| **11** | **GND** | — | Ground (GND) | Common ground |
+| **12** | **SWDIO** | **PA13** | SWD Data, Debug GPIO | Hardware debug / ST-Link SWD data |
+| **13** | **TX** | **PB6** | USART1 TX, GPIO | Hardware UART Transmit (Serial CLI / external sensors) |
+| **14** | **RX** | **PB7** | USART1 RX, GPIO | Hardware UART Receive (Serial CLI / external sensors) |
+| **15** | **C1 (PC1)** | **PB4** | GPIO, ADC (CH2), I2C3 SDA | Shared internally with I2C3 SDA and NFC MISO |
+| **16** | **C0 (PC0)** | **PA7** | GPIO, ADC (CH1), I2C3 SCL | Shared internally with I2C3 SCL |
+| **17** | **1W (iButton)** | **PA3** | 1-Wire, GPIO | Dallas 1-Wire key read & emulation (DS1990) |
+| **18** | **GND** | — | Ground (GND) | Common ground |
+
+> [!TIP]
+> * **Recommended General-Purpose Pins**: Pins **4 (PA4)** and **6 (PB2)** are completely unshared and ideal for relays, servos, buttons, or custom sensors.
+> * **External SPI Modules**: When connecting external SPI devices to Pins 2 (MOSI), 3 (MISO), and 5 (SCK), use Pin 4 (PA4) or Pin 6 (PB2) as a dedicated Chip Select (CS) line.
 
 ---
 

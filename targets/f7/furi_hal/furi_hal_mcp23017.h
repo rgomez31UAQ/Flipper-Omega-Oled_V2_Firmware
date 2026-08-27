@@ -50,6 +50,11 @@ bool furi_hal_mcp23017_write_gpio(uint16_t gpio_state);
 bool furi_hal_mcp23017_set_pin_direction(uint8_t pin, bool is_input);
 
 // RGB LED control functions - Pins B1=RED(9), B2=GREEN(10), B3=BLUE(11)
+void furi_hal_mcp23017_led_set_common_anode(bool common_anode);
+bool furi_hal_mcp23017_led_is_common_anode(void);
+void furi_hal_mcp23017_led_set_disabled(bool disabled);
+bool furi_hal_mcp23017_led_is_disabled(void);
+
 // Initialize RGB LED pins as outputs
 bool furi_hal_mcp23017_led_init(void);
 

@@ -404,34 +404,66 @@ bool furi_hal_mcp23017_set_pin_direction(uint8_t pin, bool is_input) {
     return ok;
 }
 
+static bool mcp23017_led_common_anode = true;
+static bool mcp23017_led_disabled = false;
+
+void furi_hal_mcp23017_led_set_common_anode(bool common_anode) {
+    mcp23017_led_common_anode = common_anode;
+}
+
+bool furi_hal_mcp23017_led_is_common_anode(void) {
+    return mcp23017_led_common_anode;
+}
+
+void furi_hal_mcp23017_led_set_disabled(bool disabled) {
+    mcp23017_led_disabled = disabled;
+    if(disabled) {
+        furi_hal_mcp23017_led_off();
+    }
+}
+
+bool furi_hal_mcp23017_led_is_disabled(void) {
+    return mcp23017_led_disabled;
+}
+
 // LED control functions - RGB LEDs on MCP23017 port B (B1=RED, B2=GREEN, B3=BLUE)
-// Initialize RGB LED pins as outputs and turn them off
+// Initialize RGB LED pins as outputs and turn them off according to polarity
 bool furi_hal_mcp23017_led_init(void) {
     bool ok = true;
     ok = ok && furi_hal_mcp23017_set_pin_direction(9, false);
     ok = ok && furi_hal_mcp23017_set_pin_direction(10, false);
     ok = ok && furi_hal_mcp23017_set_pin_direction(11, false);
-    ok = ok && furi_hal_mcp23017_write_pin(9, false);
-    ok = ok && furi_hal_mcp23017_write_pin(10, false);
-    ok = ok && furi_hal_mcp23017_write_pin(11, false);
+
+    bool off_val = mcp23017_led_common_anode ? true : false;
+    ok = ok && furi_hal_mcp23017_write_pin(9, off_val);
+    ok = ok && furi_hal_mcp23017_write_pin(10, off_val);
+    ok = ok && furi_hal_mcp23017_write_pin(11, off_val);
     return ok;
 }
 
 // Set individual LED colors (on/off only, no PWM)
 bool furi_hal_mcp23017_led_set_red(bool on) {
-    return furi_hal_mcp23017_write_pin(9, on);
+    if(mcp23017_led_disabled) on = false;
+    return furi_hal_mcp23017_write_pin(9, mcp23017_led_common_anode ? !on : on);
 }
 
 bool furi_hal_mcp23017_led_set_green(bool on) {
-    return furi_hal_mcp23017_write_pin(10, on);
+    if(mcp23017_led_disabled) on = false;
+    return furi_hal_mcp23017_write_pin(10, mcp23017_led_common_anode ? !on : on);
 }
 
 bool furi_hal_mcp23017_led_set_blue(bool on) {
-    return furi_hal_mcp23017_write_pin(11, on);
+    if(mcp23017_led_disabled) on = false;
+    return furi_hal_mcp23017_write_pin(11, mcp23017_led_common_anode ? !on : on);
 }
 
 // Set all three LED colors at once
 bool furi_hal_mcp23017_led_set_color(bool red, bool green, bool blue) {
+    if(mcp23017_led_disabled) {
+        red = false;
+        green = false;
+        blue = false;
+    }
     bool ok = true;
     uint8_t cur = 0;
 
@@ -441,9 +473,15 @@ bool furi_hal_mcp23017_led_set_color(bool red, bool green, bool blue) {
     if(ok) {
         uint8_t mask = (1u << 1) | (1u << 2) | (1u << 3);
         cur &= (uint8_t)~mask;
-        if(red) cur |= (1u << 1);
-        if(green) cur |= (1u << 2);
-        if(blue) cur |= (1u << 3);
+        if(mcp23017_led_common_anode) {
+            if(!red) cur |= (1u << 1);
+            if(!green) cur |= (1u << 2);
+            if(!blue) cur |= (1u << 3);
+        } else {
+            if(red) cur |= (1u << 1);
+            if(green) cur |= (1u << 2);
+            if(blue) cur |= (1u << 3);
+        }
         ok = mcp_write_reg_locked(MCP_GPIOB, cur);
     }
     furi_hal_i2c_release(mcp_i2c_handle);

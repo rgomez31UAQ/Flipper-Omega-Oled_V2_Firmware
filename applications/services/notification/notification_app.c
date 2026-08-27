@@ -1,6 +1,7 @@
 #include <furi_hal_light.h>
 #include <furi.h>
 #include <furi_hal.h>
+#include <furi_hal_mcp23017.h>
 #include <storage/storage.h>
 #include <toolbox/saved_struct.h>
 #include <input/input.h>
@@ -60,6 +61,9 @@ static void
 
 static void notification_apply_lcd_contrast(NotificationApp* app, uint8_t contrast) {
     UNUSED(app);
+    if(!furi_record_exists(RECORD_GUI)) {
+        return;
+    }
     Gui* gui = furi_record_open(RECORD_GUI);
     u8x8_t* u8x8 = &gui->canvas->fb.u8x8;
 
@@ -491,8 +495,11 @@ static NotificationApp* notification_app_alloc(void) {
     app->settings.display_off_delay_ms = 0;
     app->settings.vibro_on = true;
 	app->settings.oled_driver = NotificationOledDriverSSD1306;
+    app->settings.led_common_anode = true;
+    app->settings.led_color_preset = 0;
 
-    app->display.value[LayerInternal] = 0x00;
+    app->display.value_last[LayerInternal] = 0xFF;
+    app->display.value[LayerInternal] = 0xFF;
     app->display.value[LayerNotification] = 0x00;
     app->display.index = LayerInternal;
     app->display.light = LightBacklight;
@@ -548,6 +555,8 @@ static void notification_apply_settings(NotificationApp* app) {
     if(idx > 16) idx = 16;
     notification_apply_lcd_contrast(app, lcd_contrast_map[idx]);
     furi_hal_light_oled_set_invert(app->settings.display_inverted);
+    furi_hal_mcp23017_led_set_common_anode(app->settings.led_common_anode);
+    furi_hal_mcp23017_led_init();
 }
 
 static void notification_init_settings(NotificationApp* app) {
@@ -570,7 +579,7 @@ int32_t notification_srv(void* p) {
 
     notification_vibro_off();
     notification_sound_off();
-    notification_apply_internal_led_layer(&app->display, 0x00);
+    notification_apply_internal_led_layer(&app->display, 0xFF);
     notification_apply_internal_led_layer(&app->led[0], 0x00);
     notification_apply_internal_led_layer(&app->led[1], 0x00);
     notification_apply_internal_led_layer(&app->led[2], 0x00);

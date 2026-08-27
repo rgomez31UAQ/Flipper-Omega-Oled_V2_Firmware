@@ -1,4 +1,5 @@
 #include <furi.h>
+#include <furi_hal_mcp23017.h>
 #include <notification/notification_app.h>
 #include <gui/modules/variable_item_list.h>
 #include <gui/view_dispatcher.h>
@@ -174,6 +175,83 @@ static void screen_changed(VariableItem* item) {
     notification_message(app->notification, &sequence_display_backlight_on);
 }
 
+#define LED_TYPE_COUNT 2
+const char* const led_type_text[LED_TYPE_COUNT] = {
+    "Cathode (GND)",
+    "Anode (3.3V)",
+};
+
+static void led_type_changed(VariableItem* item) {
+    NotificationAppSettings* app = variable_item_get_context(item);
+    uint8_t index = variable_item_get_current_value_index(item);
+
+    variable_item_set_current_value_text(item, led_type_text[index]);
+    app->notification->settings.led_common_anode = (index == 1);
+    furi_hal_mcp23017_led_set_common_anode(index == 1);
+    furi_hal_mcp23017_led_init();
+    notification_message_save_settings(app->notification);
+}
+
+#define LED_COLOR_COUNT 9
+const char* const led_color_text[LED_COLOR_COUNT] = {
+    "Default",
+    "Off",
+    "Red",
+    "Green",
+    "Blue",
+    "Yellow",
+    "Cyan",
+    "Magenta",
+    "White",
+};
+
+static void led_color_changed(VariableItem* item) {
+    NotificationAppSettings* app = variable_item_get_context(item);
+    uint8_t index = variable_item_get_current_value_index(item);
+
+    variable_item_set_current_value_text(item, led_color_text[index]);
+    app->notification->settings.led_color_preset = index;
+
+    switch(index) {
+    case 0: // Default
+        furi_hal_mcp23017_led_set_disabled(false);
+        break;
+    case 1: // Off / Disabled
+        furi_hal_mcp23017_led_set_disabled(true);
+        break;
+    case 2: // Red
+        furi_hal_mcp23017_led_set_disabled(false);
+        furi_hal_mcp23017_led_set_color(true, false, false);
+        break;
+    case 3: // Green
+        furi_hal_mcp23017_led_set_disabled(false);
+        furi_hal_mcp23017_led_set_color(false, true, false);
+        break;
+    case 4: // Blue
+        furi_hal_mcp23017_led_set_disabled(false);
+        furi_hal_mcp23017_led_set_color(false, false, true);
+        break;
+    case 5: // Yellow
+        furi_hal_mcp23017_led_set_disabled(false);
+        furi_hal_mcp23017_led_set_color(true, true, false);
+        break;
+    case 6: // Cyan
+        furi_hal_mcp23017_led_set_disabled(false);
+        furi_hal_mcp23017_led_set_color(false, true, true);
+        break;
+    case 7: // Magenta
+        furi_hal_mcp23017_led_set_disabled(false);
+        furi_hal_mcp23017_led_set_color(true, false, true);
+        break;
+    case 8: // White
+        furi_hal_mcp23017_led_set_disabled(false);
+        furi_hal_mcp23017_led_set_color(true, true, true);
+        break;
+    }
+
+    notification_message_save_settings(app->notification);
+}
+
 static uint32_t notification_app_settings_exit(void* context) {
     UNUSED(context);
     return VIEW_NONE;
@@ -230,6 +308,19 @@ variable_item_set_current_value_text(item, oled_driver_text[value_index]);
         app->notification->settings.display_off_delay_ms, delay_value, DELAY_COUNT);
     variable_item_set_current_value_index(item, value_index);
     variable_item_set_current_value_text(item, delay_text[value_index]);
+
+    item = variable_item_list_add(
+        app->variable_item_list, "RGB LED Type", LED_TYPE_COUNT, led_type_changed, app);
+    value_index = app->notification->settings.led_common_anode ? 1 : 0;
+    variable_item_set_current_value_index(item, value_index);
+    variable_item_set_current_value_text(item, led_type_text[value_index]);
+
+    item = variable_item_list_add(
+        app->variable_item_list, "RGB LED Color", LED_COLOR_COUNT, led_color_changed, app);
+    value_index = app->notification->settings.led_color_preset;
+    if(value_index >= LED_COLOR_COUNT) value_index = 0;
+    variable_item_set_current_value_index(item, value_index);
+    variable_item_set_current_value_text(item, led_color_text[value_index]);
 
     // item = variable_item_list_add(
     //     app->variable_item_list, "LED Brightness", BACKLIGHT_COUNT, led_changed, app);
